@@ -133,6 +133,16 @@ blueprint:
           filter:
             - integration: bambu_lab
               domain: light
+    confidence_threshold:
+      name: Confidence Threshold
+      description: Minimum confidence percentage required to trigger failure actions (0-100%)
+      default: 50
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+          unit_of_measurement: "%"
 
 variables:
   HOME_ASSISTANT_HOST_VAR: !input home_assistant_host
@@ -140,6 +150,7 @@ variables:
   FAILURE_ACTION_VAR: !input failure_action
   NOTIFICATION_SETTINGS_VAR: !input notification_settings
   DETECTION_FREQUENCY_VAR: !input detection_frequency
+  CONFIDENCE_THRESHOLD_VAR: !input confidence_threshold
 mode: single
 max_exceeded: silent
 trigger:
@@ -418,6 +429,16 @@ action:
               - stop: ""
             alias: >-
               if now() - last_notify_time < 1min
+
+          # Check confidence threshold before triggering actions
+          - if:
+              - condition: template
+                value_template: >-
+                  {{ (states('number.bambu_lab_p1_spaghetti_detection_normalized_p') | float * 100) < CONFIDENCE_THRESHOLD_VAR }}
+            then:
+              - stop: ""
+            alias: >-
+              if confidence < threshold
 
           - choose:
               - conditions:
